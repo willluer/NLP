@@ -3,7 +3,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.stem import WordNetLemmatizer
 
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, DBSCAN
 from sklearn.metrics import adjusted_rand_score
 
 lemmatizer = WordNetLemmatizer()
@@ -31,7 +31,15 @@ ex = ["the sunshine was strong and hot",
     "My cat and dog are not friends",
     "Rain is the name of my dog",
     "Cats and dogs do not get along",
-    "Fetch boy"]
+    "Fetch dog",
+    "Sun and rain and dog",
+    "Go get a new dog",
+    "Why is there a cloud during the sun",
+    "Do not rain shower on me with my dog"
+    "cat dog cat dog rain sun",
+    "Cute dogs have a higher likability",
+    "My dog name is hank",
+    "Hello put on your sun screen unless there is rain"]
 
 test = "It is going to rain and storm"
 
@@ -47,11 +55,11 @@ vectorizer = TfidfVectorizer(stop_words='english')
 X = vectorizer.fit_transform(ex)
 
 true_k = 3
-model = KMeans(n_clusters=true_k, init='k-means++', max_iter=100, n_init=1)
-model.fit(X)
+model_kmeans = KMeans(n_clusters=true_k, init='k-means++', max_iter=100, n_init=1)
+model_kmeans.fit(X)
 
 print("Top terms per cluster:")
-order_centroids = model.cluster_centers_.argsort()[:, ::-1]
+order_centroids = model_kmeans.cluster_centers_.argsort()[:, ::-1]
 terms = vectorizer.get_feature_names()
 for i in range(true_k):
     print("Cluster %d:" % i),
@@ -59,17 +67,27 @@ for i in range(true_k):
         print(' %s' % terms[ind]),
     print
 
+
+model_dbscan = DBSCAN(eps = 1.02, min_samples = 2).fit(X)
+
+labels = model_dbscan.labels_
+# Number of clusters in labels, ignoring noise if present.
+n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+print('Estimated number of DBSCAN clusters: %d' % n_clusters_)
+print('labels:')
+print(labels)
 print("\n")
+print(model_dbscan.components_)
 print("Prediction")
 
 Y = vectorizer.transform(["storm storm storm storm"])
-prediction = model.predict(Y)
+prediction = model_kmeans.predict(Y)
+print(prediction)
+prediction = model_dbscan.fit_predict(Y)
 print(prediction)
 
 Y = vectorizer.transform(["sun sun sun sun sun sun"])
-prediction = model.predict(Y)
+prediction = model_kmeans.predict(Y)
 print(prediction)
-
-Y = vectorizer.transform(["Do you like my dog"])
-prediction = model.predict(Y)
+prediction = model_dbscan.fit_predict(Y)
 print(prediction)
